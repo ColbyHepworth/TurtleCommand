@@ -1,0 +1,155 @@
+package render;
+
+import javafx.geometry.Point3D;
+import javafx.scene.Group;
+import javafx.scene.paint.Color;
+import javafx.scene.paint.PhongMaterial;
+import javafx.scene.shape.Box;
+import javafx.scene.shape.Cylinder;
+import javafx.scene.transform.Rotate;
+import javafx.scene.transform.Translate;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class WorldGroup extends Group {
+
+    private final Map<Point3D, BorderedCube> cubes = new HashMap<>();
+
+    public WorldGroup() {
+        super();
+    }
+
+    public BorderedCube getCube(Point3D point) {
+        return cubes.get(point);
+    }
+
+    public void addCube(Point3D point) {
+        BorderedCube cube = new BorderedCube(new Point3D(point.getX(), point.getY(), point.getZ()));
+        cubes.put(point, cube);
+        super.getChildren().add(cube);
+    }
+
+    public void removeCube(Point3D point) {
+        BorderedCube cube = cubes.get(point);
+        cubes.remove(point);
+        super.getChildren().remove(cube);
+    }
+
+    public void moveCube(Point3D point, Point3D newPoint) {
+        BorderedCube cube = cubes.get(point);
+        cube.moveCube(newPoint);
+        cubes.remove(point);
+        cubes.put(newPoint, cube);
+    }
+
+    public void rotateCube(Point3D point, double angle) {
+        BorderedCube cube = cubes.get(point);
+        cube.rotateCube(angle);
+    }
+
+    private static class BorderedCube extends Group {
+
+
+        BorderedCube(Point3D point) {
+            this(point, 100, 100, 100);
+
+        }
+
+        BorderedCube(Point3D point, int width, int height, int depth) {
+            super();
+            Cube cube = new Cube(point);
+            PhongMaterial material = new PhongMaterial();
+            cube.setTranslateX(point.getX());
+            cube.setTranslateY(point.getY());
+            cube.setTranslateZ(point.getZ());
+            cube.setMaterial(material);
+            super.getChildren().add(cube);
+            cube.createBoxLines();
+        }
+
+        public void moveCube(Point3D point) {
+            super.getTransforms().add(new Translate(point.getX(), point.getY(), point.getZ()));
+        }
+
+        public void rotateCube(double angle) {
+            super.getTransforms().add(new Rotate(angle, 0, 0, 0, Rotate.Y_AXIS));
+        }
+
+        public Point3D getPoint() {
+            return new Point3D(super.getTranslateX(), super.getTranslateY(), super.getTranslateZ());
+        }
+
+        private class Cube extends Box {
+
+            Cube(Point3D point) {
+                this(point, 100, 100, 100);
+            }
+
+            Cube(Point3D point, int width, int height, int depth) {
+                super(width, height, depth);
+                PhongMaterial material = new PhongMaterial();
+                super.setTranslateX(point.getX());
+                super.setTranslateY(point.getY());
+                super.setTranslateZ(point.getZ());
+                super.setMaterial(material);
+                createBoxLines();
+            }
+
+            private void createBoxLines() {
+
+                double x = super.getTranslateX();
+                double y = super.getTranslateY();
+                double z = super.getTranslateZ();
+                double halfWidth = super.getWidth() / 2;
+                double halfHeight = super.getHeight() / 2;
+                double halfDepth = super.getDepth() / 2;
+
+                Point3D p1 = new Point3D(x - halfWidth, y - halfHeight, z - halfDepth);
+                Point3D p2 = new Point3D(x + halfWidth, y - halfHeight, z - halfDepth);
+                Point3D p3 = new Point3D(x - halfWidth, y + halfHeight, z - halfDepth);
+                Point3D p4 = new Point3D(x + halfWidth, y + halfHeight, z - halfDepth);
+                Point3D p5 = new Point3D(x - halfWidth, y - halfHeight, z + halfDepth);
+                Point3D p6 = new Point3D(x + halfWidth, y - halfHeight, z + halfDepth);
+                Point3D p7 = new Point3D(x - halfWidth, y + halfHeight, z + halfDepth);
+                Point3D p8 = new Point3D(x + halfWidth, y + halfHeight, z + halfDepth);
+
+                createLine(p1, p2);
+                createLine(p1, p3);
+                createLine(p3, p4);
+                createLine(p2, p4);
+                createLine(p5, p6);
+                createLine(p5, p7);
+                createLine(p7, p8);
+                createLine(p6, p8);
+                createLine(p1, p5);
+                createLine(p2, p6);
+                createLine(p3, p7);
+                createLine(p4, p8);
+            }
+
+            private void createLine(Point3D origin, Point3D target) {
+
+                Point3D yAxis = new Point3D(0, 1, 0);
+                Point3D diff = target.subtract(origin);
+                double height = diff.magnitude();
+
+                Point3D mid = target.midpoint(origin);
+                Translate moveToMidpoint = new Translate(mid.getX(), mid.getY(), mid.getZ());
+
+                Point3D axisOfRotation = diff.crossProduct(yAxis);
+                double angle = Math.acos(diff.normalize().dotProduct(yAxis));
+                Rotate rotateAroundCenter = new Rotate(-Math.toDegrees(angle), axisOfRotation);
+
+
+                Cylinder line = new Cylinder(1, height);
+                line.setMaterial(new PhongMaterial(Color.BLACK));
+                line.getTransforms().addAll(moveToMidpoint, rotateAroundCenter);
+
+                BorderedCube.super.getChildren().add(line);
+            }
+        }
+    }
+}
+
+
