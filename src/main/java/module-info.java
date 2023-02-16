@@ -12,7 +12,15 @@ module TurtleCommand {
     requires org.eclipse.jetty.websocket.api;
     requires spark.core;
 
+
     opens render to javafx.fxml;
     opens backend;
+    opens navigation;
+    opens turtle;
+    opens world;
     exports render;
+    exports backend;
+    exports navigation;
+    exports turtle;
+    exports world;
 }

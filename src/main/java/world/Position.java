@@ -2,6 +2,7 @@ package world;
 
 
 import com.google.gson.annotations.SerializedName;
+import javafx.geometry.Point3D;
 
 import java.util.Map;
 import java.util.Objects;
@@ -41,6 +42,10 @@ public class Position implements Comparable<Position> {
 
     public int distanceTo(Position other) {
         return Math.abs(X - other.X) + Math.abs(Y - other.Y) + Math.abs(Z - other.Z);
+    }
+
+    public Point3D toPoint3D() {
+        return new Point3D(X, Y, Z);
     }
 
 

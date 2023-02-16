@@ -1,12 +1,18 @@
 package backend;
 
-import com.google.gson.Gson;
-import turtle.Turtle;
-import turtle.Turtles;
-import org.eclipse.jetty.websocket.api.Session;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import com.google.gson.Gson;
+import javafx.geometry.Point3D;
+import javafx.scene.effect.Light;
+import render.World;
+import spark.Spark;
+import turtle.Turtle;
+import turtle.Turtles;
+import org.eclipse.jetty.websocket.api.Session;
+import world.Block;
+import world.Position;
 
 import static spark.Spark.*;
 
@@ -17,25 +23,24 @@ public class TurtleServer {
     private static final Map<Session, String> clients = new ConcurrentHashMap<>();
 
 
-    public static void main(String[] args) {
-        webSocket("/turtles", WebSocketHandler.class);
+
+    public void start() {
+        WebSocketHandler webSocketHandler = new WebSocketHandler(this);
+        webSocket("/turtles", webSocketHandler);
         port(PORT);
         init();
     }
 
-    static class Deserializer {
-        static Gson gson = new Gson();
-        public static Turtle deserializeTurtle(String json) {
-            return gson.fromJson(json, Turtle.class);
-        }
+    public Turtles getTurtles() {
+        return turtles;
     }
 
-    public static void onMessage(String message, Session session) {
-        System.out.println(session);
-        System.out.println("Received message: " + message);
+    void onMessage(String message, Session session) {
+        Turtle turtle = Deserializer.deserializeTurtle(message);
+        turtles.addTurtle(turtle);
     }
 
-    public static void broadcastMessage(String sender, String message) {
+    void broadcastMessage(String sender, String message) {
         clients.keySet().stream().filter(Session::isOpen).forEach(session -> {
             try {
                 session.getRemote().sendString("hey");

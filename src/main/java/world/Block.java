@@ -1,34 +1,28 @@
 package world;
 
+import com.google.gson.annotations.SerializedName;
+
 public class Block {
 
-    private final int x;
-    private final int y;
-    private final int z;
-    private final String name;
+    @SerializedName("name")
+    private String[] name; // This is only an array because the client has to return it as one
 
-    public Block(int x, int y, int z, String name) {
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.name = name;
-    }
-
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public int getZ() {
-        return z;
-    }
+    @SerializedName("position")
+    private Position position;
 
     public String getName() {
-        return name;
+        return name[0];
     }
 
-}
+    public Position getPosition() {
+        return position;
+    }
 
+    public void setPosition(Position position) {
+        this.position = position;
+    }
+
+    public Boolean isEmpty() {
+        return name[0].equals("empty");
+    }
+}

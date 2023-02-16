@@ -1,111 +1,140 @@
 package render;
 
+import backend.TurtleServer;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Point3D;
 import javafx.scene.*;
-import javafx.scene.input.ScrollEvent;
+import javafx.scene.Cursor;
+import javafx.scene.input.MouseButton;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.PhongMaterial;
 import javafx.scene.transform.Rotate;
+import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
+import javafx.util.Duration;
+import turtle.Turtle;
+import world.Block;
+
+import java.util.Objects;
 
 public class MainApp extends Application {
 
-    private static final int WIDTH = 1400;
-    private static final int HEIGHT = 1000;
+    private static final double SENSITIVITY = 1;
+    private static final double ZOOM_SENSITIVITY = 2;
 
-    private double anchorX, anchorY;
-    private double anchorAngleX = 0;
-    private double anchorAngleY = 0;
-    private final DoubleProperty angleX = new SimpleDoubleProperty(0);
-    private final DoubleProperty angleY = new SimpleDoubleProperty(0);
-    static Group group = new Group();
+    private static final int ZOOM_MIN = 200;
+    private static final int ZOOM_MAX = 10000;
 
+    private final double sceneWidth = 1280;
+    private final double sceneHeight = 720;
 
+    private static final String texture = "res/wood.png";
 
-    @Override
-    public void start(Stage primaryStage) {
+    private double cursorLocX, cursorLocY;
 
+    private final Translate zoom = new Translate(0, -16, -2000);
 
-        PhongMaterial material = new PhongMaterial();
+    private double angleX = 0;
+    private double angleY = 0;
 
+    private final Rotate rotateX = new Rotate(0, 0, -16, 0, Rotate.X_AXIS);
+    private final Rotate rotateY = new Rotate(0, 0, -16, 0, Rotate.Y_AXIS);
+    private final Rotate rotateZ = new Rotate(0, 0, -16, 0, Rotate.Z_AXIS);
+    private final TurtleServer turtleServer = new TurtleServer();
 
-        WorldGroup group = new WorldGroup();
+    private final World group = new World(turtleServer.getTurtles());
+    private PerspectiveCamera camera;
 
+    @Override public void start(Stage stage) {
 
-        group.addCube(new Point3D(0, 0, 0));
-        group.addCube(new Point3D(100, 100, 100));
-
-
-
-
-
-        Camera camera = new PerspectiveCamera();
-        Scene scene = new Scene(group, WIDTH, HEIGHT, true, SceneAntialiasing.BALANCED);
+        turtleServer.start();
 
         AmbientLight light = new AmbientLight(Color.WHITE);
         light.setColor(Color.WHITE);
         light.setTranslateX(-200);
         light.setTranslateY(-200);
         light.setTranslateZ(-200);
-
         group.getChildren().add(light);
 
-        scene.setFill(Color.rgb(0, 84, 166));
+        camera = new PerspectiveCamera(true);
+        camera.setVerticalFieldOfView(false);
+        camera.setNearClip(0.1);
+        camera.setFarClip(100000.0);
+        camera.getTransforms().addAll(rotateX, rotateY, rotateZ, zoom);
+
+        Scene scene = new Scene(group, sceneWidth, sceneHeight, true, SceneAntialiasing.BALANCED);
+        scene.setFill(Color.rgb(74, 109, 229));
         scene.setCamera(camera);
 
-        group.translateXProperty().set(WIDTH / 2.0);
-        group.translateYProperty().set(HEIGHT / 2.0);
-        group.translateZProperty().set(-1500);
-
-        initMouseControl(group, scene);
-
-        primaryStage.setTitle("Testing");
-        primaryStage.setScene(scene);
-        primaryStage.show();
-
-
-
-    }
-
-    private void initMouseControl(Group group, Scene scene) {
-        Rotate xRotate;
-        Rotate yRotate;
-        group.getTransforms().addAll(
-                xRotate = new Rotate(0, Rotate.X_AXIS),
-                yRotate = new Rotate(0, Rotate.Y_AXIS)
-        );
-        xRotate.angleProperty().bind(angleX);
-        yRotate.angleProperty().bind(angleY);
-
         scene.setOnMousePressed(event -> {
-            anchorX = event.getSceneX();
-            anchorY = event.getSceneY();
-            anchorAngleX = angleX.get();
-            anchorAngleY = angleY.get();
+            if (event.getButton() == MouseButton.MIDDLE) {
+                scene.setCursor(Cursor.MOVE);
+                cursorLocX = event.getScreenX();
+                cursorLocY = event.getScreenY();
+            }
+        });
+
+        scene.setOnMouseReleased(event -> {
+            if (event.getButton() == MouseButton.MIDDLE)
+                scene.setCursor(Cursor.DEFAULT);
         });
 
         scene.setOnMouseDragged(event -> {
-            angleX.set(anchorAngleX - (anchorY - event.getSceneY()));
-            angleY.set(anchorAngleY + anchorX - event.getSceneX());
+            if (event.getButton() == MouseButton.MIDDLE) {
+                rotateCameraBy(event.getScreenY() - cursorLocY, event.getScreenX() - cursorLocX);
+                cursorLocX = event.getScreenX();
+                cursorLocY = event.getScreenY();
+            }
         });
 
-        scene.addEventHandler(ScrollEvent.SCROLL, event -> {
-            double delta = event.getDeltaY();
-            group.translateZProperty().set(group.getTranslateZ() - delta);
-        });
+        scene.setOnScroll(event -> zoomCameraBy(event.getDeltaY()));
 
-
+        //showing the scene
+        stage.setTitle("TurtleCommand");
+        stage.setScene(scene);
+        stage.show();
+        Timeline timeline = new Timeline(
+                new KeyFrame(Duration.seconds(1), event -> {
+                    updateScene();
+                })
+        );
+        timeline.setCycleCount(Animation.INDEFINITE);
+        timeline.play();
     }
 
-    public static void main(String[] args) {
-        launch(args);
+    private void zoomCameraBy(double diff) {
+        if (diff == 0)
+            return;
+        if (-(zoom.getZ() + diff) >= ZOOM_MIN && -(zoom.getZ() + diff) <= ZOOM_MAX)
+            zoom.setZ(zoom.getZ() + diff * ZOOM_SENSITIVITY);
     }
 
+    private void rotateCameraBy(double diffX, double diffY) {
+        if (diffX == 0 && diffY == 0)
+            return;
+        angleX -= diffX / sceneWidth * 360 * SENSITIVITY;
+        angleY += diffY / sceneHeight * 360 * SENSITIVITY;
 
+        rotateY.setAngle(angleY);
+        rotateX.setAngle(angleX*Math.cos(Math.toRadians(angleY)));
+        rotateZ.setAngle(angleX*Math.sin(Math.toRadians(angleY)));
+    }
 
+    private void updateScene() {
 
-
+        for (Turtle turtle : turtleServer.getTurtles().getTurtles().values()) {
+            group.renderTurtle(turtle);
+            camera.setTranslateX(turtle.getPosition().toPoint3D().multiply(100).getX());
+            camera.setTranslateY(turtle.getPosition().toPoint3D().multiply(100).getY());
+            camera.setTranslateZ(turtle.getPosition().toPoint3D().multiply(100).getZ());
+            for (Block block : turtle.getScanned()) {
+                if (!Objects.equals(block.getName(), "empty")) {
+                    Point3D position = block.getPosition().toPoint3D().multiply(100);
+                    group.addCube(position);
+                }
+            }
+        }
+    }
 }

@@ -1,5 +1,7 @@
 package turtle;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class Turtles {
 
@@ -9,12 +11,12 @@ public class Turtles {
         this.turtles = new HashMap<>();
     }
 
-    public void newTurtle(int id) {
-        this.turtles.put(id, new Turtle(id));
-    }
-
     public void addTurtle(Turtle turtle) {
-        this.turtles.put(turtle.getId(), turtle);
+        if (this.turtles.containsKey(turtle.getId())) {
+            this.turtles.get(turtle.getId()).updateTurtle(turtle);
+        } else {
+            this.turtles.put(turtle.getId(), turtle);
+        }
     }
 
     public void removeTurtle(int id) {
@@ -27,7 +29,6 @@ public class Turtles {
 
     public void updateTurtle(int index, Turtle turtle) {
         this.turtles.get(index).updateTurtle(turtle);
-
     }
 
     public int getNumberOfTurtles() {
@@ -37,6 +38,8 @@ public class Turtles {
     public HashMap<Integer, Turtle> getTurtles() {
         return turtles;
     }
+
+
 
     @Override
     public String toString() {

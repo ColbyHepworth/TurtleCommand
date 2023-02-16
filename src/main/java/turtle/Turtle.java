@@ -1,11 +1,10 @@
 package turtle;
 
 import com.google.gson.annotations.SerializedName;
+import world.Block;
 import world.Position;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 public class Turtle {
 
@@ -20,6 +19,9 @@ public class Turtle {
 
     @SerializedName("path")
     private List<Position> path;
+
+    @SerializedName("scanned")
+    private List<Block> scanned;
 
     @SerializedName("inventory")
     private Inventory inventory = new Inventory();
@@ -48,7 +50,7 @@ public class Turtle {
         this.path = newTurtle.getPath();
         this.inventory = newTurtle.getInventory();
         this.status = newTurtle.status;
-
+        this.scanned = newTurtle.getScanned();
     }
 
     public void updateDirection(String direction) {
@@ -70,6 +72,10 @@ public class Turtle {
 
     public List<Position> getPath() {
         return path;
+    }
+
+    public List<Block> getScanned() {
+        return scanned;
     }
 
     public void setStatus(String status, boolean value) {

@@ -8,16 +8,25 @@ import javafx.scene.shape.Box;
 import javafx.scene.shape.Cylinder;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Translate;
+import turtle.Turtle;
+import turtle.Turtles;
+import world.Position;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class WorldGroup extends Group {
+public class World extends Group {
 
     private final Map<Point3D, BorderedCube> cubes = new HashMap<>();
+    private final Turtles turtles;
+    private Map<Turtle, BorderedCube> turtleCubes;
 
-    public WorldGroup() {
+
+    public World(Turtles turtles) {
         super();
+        this.turtles = turtles;
+        this.turtleCubes = new HashMap<>();
+        renderTurtles();
     }
 
     public BorderedCube getCube(Point3D point) {
@@ -25,7 +34,17 @@ public class WorldGroup extends Group {
     }
 
     public void addCube(Point3D point) {
-        BorderedCube cube = new BorderedCube(new Point3D(point.getX(), point.getY(), point.getZ()));
+        if (cubes.containsKey(point)) {
+            return;
+        }
+        BorderedCube cube = new BorderedCube(point);
+        cubes.put(point, cube);
+        super.getChildren().add(cube);
+
+    }
+
+    public void addCube(Point3D point, int width, int height, int depth) {
+        BorderedCube cube = new BorderedCube(point, width, height, depth);
         cubes.put(point, cube);
         super.getChildren().add(cube);
     }
@@ -48,36 +67,53 @@ public class WorldGroup extends Group {
         cube.rotateCube(angle);
     }
 
-    private static class BorderedCube extends Group {
+    public void renderTurtles() {
+        for (Turtle turtle : turtles.getTurtles().values()) {
+            if (!turtleCubes.containsKey(turtle)) {
+                BorderedCube cube = new BorderedCube(turtle.getPosition().toPoint3D().multiply(100), 50, 50, 50);
+                turtleCubes.put(turtle, cube);
+                super.getChildren().add(cube);
+            }
+            BorderedCube cube = turtleCubes.get(turtle);
+            cube.moveCube(turtle.getPosition().toPoint3D());
+        }
+    }
+
+    public void moveTurtle(Turtle turtle, Point3D position) {
+        System.out.println("Moving turtle to " + position);
+        turtleCubes.get(turtle).moveCube(position);
+    }
+
+    public void renderTurtle(Turtle turtle) {
+        BorderedCube cube = new BorderedCube(turtle.getPosition().toPoint3D().multiply(100), 50, 50, 50);
+        turtleCubes.put(turtle, cube);
+        super.getChildren().add(cube);
+    }
 
 
-        BorderedCube(Point3D point) {
+    public static class BorderedCube extends Group {
+
+        protected BorderedCube(Point3D point) {
             this(point, 100, 100, 100);
-
         }
 
         BorderedCube(Point3D point, int width, int height, int depth) {
             super();
-            Cube cube = new Cube(point);
-            PhongMaterial material = new PhongMaterial();
-            cube.setTranslateX(point.getX());
-            cube.setTranslateY(point.getY());
-            cube.setTranslateZ(point.getZ());
-            cube.setMaterial(material);
+            Cube cube = new Cube(point, width, height, depth);
             super.getChildren().add(cube);
-            cube.createBoxLines();
+
         }
 
-        public void moveCube(Point3D point) {
+        void moveCube(Point3D point) {
             super.getTransforms().add(new Translate(point.getX(), point.getY(), point.getZ()));
         }
 
-        public void rotateCube(double angle) {
+        void rotateCube(double angle) {
             super.getTransforms().add(new Rotate(angle, 0, 0, 0, Rotate.Y_AXIS));
         }
 
-        public Point3D getPoint() {
-            return new Point3D(super.getTranslateX(), super.getTranslateY(), super.getTranslateZ());
+        Position getPosition() {
+            return new Position((int) super.getTranslateX(), (int) super.getTranslateY(), (int) super.getTranslateZ());
         }
 
         private class Cube extends Box {
@@ -88,7 +124,8 @@ public class WorldGroup extends Group {
 
             Cube(Point3D point, int width, int height, int depth) {
                 super(width, height, depth);
-                PhongMaterial material = new PhongMaterial();
+                PhongMaterial material = new PhongMaterial(Color.rgb(206, 216, 247));
+
                 super.setTranslateX(point.getX());
                 super.setTranslateY(point.getY());
                 super.setTranslateZ(point.getZ());

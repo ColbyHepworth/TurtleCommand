@@ -1,6 +1,5 @@
 package world;
 
-
 public class Item {
 
     private final String name;
