@@ -15,6 +15,7 @@ import javafx.scene.transform.Translate;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import turtle.Turtle;
+import turtle.Turtles;
 import world.Block;
 
 import java.util.Objects;
@@ -46,10 +47,12 @@ public class MainApp extends Application {
 
     private final World group = new World(turtleServer.getTurtles());
     private PerspectiveCamera camera;
+    private Turtles turtles;
 
     @Override public void start(Stage stage) {
 
         turtleServer.start();
+
 
         AmbientLight light = new AmbientLight(Color.WHITE);
         light.setColor(Color.WHITE);
@@ -91,7 +94,6 @@ public class MainApp extends Application {
 
         scene.setOnScroll(event -> zoomCameraBy(event.getDeltaY()));
 
-        //showing the scene
         stage.setTitle("TurtleCommand");
         stage.setScene(scene);
         stage.show();
@@ -123,8 +125,8 @@ public class MainApp extends Application {
     }
 
     private void updateScene() {
-
-        for (Turtle turtle : turtleServer.getTurtles().getTurtles().values()) {
+        Turtles turtles = turtleServer.getTurtles();
+        for (Turtle turtle : turtles.getTurtles().values()) {
             group.renderTurtle(turtle);
             camera.setTranslateX(turtle.getPosition().toPoint3D().multiply(100).getX());
             camera.setTranslateY(turtle.getPosition().toPoint3D().multiply(100).getY());

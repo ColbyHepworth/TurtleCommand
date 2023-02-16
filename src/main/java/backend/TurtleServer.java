@@ -36,14 +36,19 @@ public class TurtleServer {
     }
 
     void onMessage(String message, Session session) {
+        System.out.println("Received message: " + message);
         Turtle turtle = Deserializer.deserializeTurtle(message);
         turtles.addTurtle(turtle);
+        System.out.println("------------------------------------------");
+        for (Block block : turtle.getScanned()) {
+            System.out.println("Block at " + block.getPosition() + " is " + block.getName());
+        }
     }
 
-    void broadcastMessage(String sender, String message) {
+    public void broadcastMessage(String sender, String message) {
         clients.keySet().stream().filter(Session::isOpen).forEach(session -> {
             try {
-                session.getRemote().sendString("hey");
+                session.getRemote().sendString(message);
             } catch (Exception e) {
                 e.printStackTrace();
             }

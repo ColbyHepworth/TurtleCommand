@@ -86,10 +86,13 @@ public class World extends Group {
 
     public void renderTurtle(Turtle turtle) {
         BorderedCube cube = new BorderedCube(turtle.getPosition().toPoint3D().multiply(100), 50, 50, 50);
-        turtleCubes.put(turtle, cube);
-        super.getChildren().add(cube);
+        if (turtleCubes.containsKey(turtle)) {
+            moveTurtle(turtle, turtle.getPosition().toPoint3D().multiply(100));
+        } else {
+            turtleCubes.put(turtle, cube);
+            super.getChildren().add(cube);
+        }
     }
-
 
     public static class BorderedCube extends Group {
 
